@@ -6,13 +6,26 @@ import { FC, useState } from "react";
 import DropZone from "react-dropzone";
 import { Progress } from "./ui/progress";
 import { useUploadThing } from "@/lib/uploadthing";
-import { toast } from "./ui/use-toast";
+import { toast, useToast } from "./ui/use-toast";
+import { trpc } from "@/app/_trpc/client";
+import { useRouter } from "next/navigation";
 
 const UploadDropZone = () => {
+  const router = useRouter();
   const [isUploading, setIsUploading] = useState<boolean>(true);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
+  const { toast } = useToast();
+
   const { startUpload } = useUploadThing("pdfUploader");
+
+  const { mutate: startPolling } = trpc.getFile.useMutation({
+    onSuccess: (file) => {
+      router.push(`/dashboard/${file.id}`);
+    },
+    retry: true,
+    retryDelay: 1000,
+  });
 
   const startSimulatedProgress = () => {
     setUploadProgress(0);
@@ -47,8 +60,22 @@ const UploadDropZone = () => {
           });
         }
 
+        const [fileResponse] = res;
+
+        const key = fileResponse?.key;
+
+        if (!key) {
+          return toast({
+            title: "Something went wrong",
+            description: "Please try again later",
+            variant: "destructive",
+          });
+        }
+
         clearInterval(progressInterval);
         setUploadProgress(100);
+
+        startPolling({ key });
       }}
     >
       {({ getInputProps, getRootProps, acceptedFiles }) => (
@@ -99,6 +126,12 @@ const UploadDropZone = () => {
                   ) : null}
                 </div>
               ) : null}
+              <input
+                {...getInputProps()}
+                type="file"
+                id="dropzone-file"
+                className="hidden"
+              />
             </label>
           </div>
         </div>
