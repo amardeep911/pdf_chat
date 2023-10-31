@@ -8,6 +8,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
+import "simplebar-react/dist/simplebar.min.css";
 
 export const metadata: Metadata = {
   title: "Create Next App",
